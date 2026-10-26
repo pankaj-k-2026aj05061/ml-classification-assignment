@@ -2,7 +2,7 @@
 
 **Repository:** https://github.com/pankaj-k-2026aj05061/ml-classification-assignment  
 **Live Streamlit app:** https://pankaj-k-2026aj05061-ml-classification-assignment-app-t6l9gk.streamlit.app/  
-**BITS Virtual Lab screenshot:** Must be captured by the student inside their authenticated lab session.
+**BITS Virtual Lab evidence:** The included screenshot was captured from the authenticated BITS Virtual Lab terminal while running `python train_models.py` and displaying all five models' evaluation metrics.
 
 ## A. Problem statement
 
@@ -78,7 +78,7 @@ The uploaded CSV must contain the exact 30 feature columns and diagnosis target 
 
 ## Run locally
 
-Use Python 3.13 with a compatible environment. From the project directory:
+Use Python 3.12 or 3.13 with a compatible environment. From the project directory:
 
     python -m venv .venv
     python -m pip install --upgrade pip
@@ -102,7 +102,7 @@ Official guide: https://docs.streamlit.io/deploy/streamlit-community-cloud/deplo
 
 ## BITS Virtual Lab evidence and final submission
 
-The exercise requires a screenshot showing execution in BITS Virtual Lab and a single PDF containing the GitHub repository URL, live Streamlit URL, this README content, and the screenshot. Open BITS Virtual Lab using the student's own credentials, upload/open the notebook, run it, and capture the screenshot there. Do not fabricate this evidence. Finalize the PDF only after the deployment URL and screenshot are available.
+The exercise requires a screenshot showing execution in BITS Virtual Lab and a single PDF containing the GitHub repository URL, live Streamlit URL, this README content, and the screenshot. The screenshot in the submission PDF shows the actual BITS Virtual Lab terminal running `python train_models.py` and printing the five-model evaluation table. The notebook helper is included for reference. The evidence is genuine and was not recreated.
 
 ## Limitations
 
