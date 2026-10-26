@@ -1,0 +1,25 @@
+{
+  "dataset": "UCI Breast Cancer Wisconsin (Diagnostic)",
+  "dataset_source": "https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic",
+  "n_instances": 569,
+  "n_features": 30,
+  "n_train": 455,
+  "n_test": 114,
+  "test_size_fraction": 0.2,
+  "random_state": 42,
+  "target_column": "diagnosis",
+  "positive_class": "malignant",
+  "class_mapping": {
+    "benign": 0,
+    "malignant": 1
+  },
+  "models": {
+    "Logistic Regression": "model/logistic_regression.joblib",
+    "Decision Tree": "model/decision_tree.joblib",
+    "K-Nearest Neighbors": "model/k_nearest_neighbors.joblib",
+    "Gaussian Naive Bayes": "model/gaussian_naive_bayes.joblib",
+    "Support Vector Machine": "model/support_vector_machine.joblib"
+  },
+  "python_version": "3.13.16",
+  "scikit_learn_version": "1.8.0"
+}
