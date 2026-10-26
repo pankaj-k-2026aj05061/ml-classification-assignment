@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "app.py"
       - "train_models.py"
       - "requirements.txt"
       - "tests/**"
@@ -28,19 +29,40 @@ jobs:
           cache: pip
       - name: Install dependencies
         run: python -m pip install --upgrade pip && pip install -r requirements.txt
+      - name: Verify Python syntax
+        run: python -m py_compile app.py train_models.py tests/test_models.py
       - name: Train all five models and write test data
         run: python train_models.py
       - name: Run regression tests
         run: python -m unittest discover -s tests -v
+      - name: Smoke-test Streamlit startup
+        run: |
+          streamlit run app.py --server.headless true --server.port 8501 > streamlit.log 2>&1 &
+          APP_PID=$!
+          trap 'kill "$APP_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 45); do
+            if curl --silent --fail http://localhost:8501/_stcore/health >/dev/null; then
+              echo "Streamlit health check passed."
+              exit 0
+            fi
+            if ! kill -0 "$APP_PID" 2>/dev/null; then
+              cat streamlit.log
+              exit 1
+            fi
+            sleep 1
+          done
+          cat streamlit.log
+          echo "Streamlit did not become healthy."
+          exit 1
       - name: Commit generated model artifacts and experiment CSVs
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main
           git add model/*.joblib model/manifest.json test_data.csv evaluation_results.csv evaluation_results_ranked.csv
           if git diff --cached --quiet; then
-            echo "No generated artifact changes."
+            echo "Generated artifacts are unchanged."
           else
             git commit -m "Add reproducible trained models and evaluation data"
-            git push origin HEAD:main
           fi
+          git pull --rebase origin main
+          git push origin HEAD:main
