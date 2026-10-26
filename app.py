@@ -155,6 +155,7 @@ def main():
                  use_container_width=True, hide_index=True)
     winner = comparison.iloc[0]
     st.write("Highest AUC on this test file: " + str(winner["Model"]) + " (AUC " + format(winner["AUC"], ".4f") + ").")
+    st.caption("For SVM, the predicted label comes from its decision function, while AUC and the exported malignant score use its calibrated probability. With probability=True, these can occasionally disagree around 0.5.")
 
     st.subheader("Inspect a model")
     selected_name = st.selectbox("Choose classifier", list(models.keys()))
