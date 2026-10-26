@@ -96,7 +96,7 @@ The deployed app loads saved models. The separate training script is for reprodu
 3. Select branch main and entry file app.py.
 4. Wait for the build to complete and open the generated public URL.
 5. Verify that the app loads the sample CSV and displays the comparison metrics, confusion matrix, and report.
-6. The live-app URL above is the URL supplied for this deployment. Verify the app visually before final submission.
+6. The student opened the live app URL and confirmed that the five-model comparison table is visible.
 
 Official guide: https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy
 
