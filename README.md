@@ -1,12 +1,12 @@
-# ML Classification Model Comparison and Streamlit App
+# Comparing Five Classification Models
 
 **Repository:** https://github.com/pankaj-k-2026aj05061/ml-classification-assignment  
 **Live Streamlit app:** https://pankaj-k-2026aj05061-ml-classification-assignment-app-t6l9gk.streamlit.app/  
-**BITS Virtual Lab evidence:** The included screenshot was captured from the authenticated BITS Virtual Lab desktop and shows lab user ID `s2026aj05061`, Jupyter Notebook, and the five models' evaluation metrics.
+**BITS Virtual Lab run:** Screenshots show lab ID `s2026aj05061`, the Jupyter notebook, and the five-model results.
 
 ## A. Problem statement
 
-Train five classification models on one public dataset, evaluate all models using the six required metrics, compare their performance, and deploy an interactive Streamlit application. The app accepts a labeled test CSV, loads saved estimators, and reports metrics, a confusion matrix, and a classification report. It does not retrain a model on uploaded test data.
+This project compares five classifiers on the Wisconsin Diagnostic Breast Cancer dataset. Each model is scored on the same holdout set using accuracy, AUC, precision, recall, F1, and MCC. The Streamlit app accepts a labeled CSV and shows the comparison, confusion matrix, and classification report without retraining on uploaded data.
 
 ## B. Dataset description
 
@@ -15,10 +15,10 @@ The project uses the Breast Cancer Wisconsin (Diagnostic) dataset from the UCI M
 - 569 instances and 30 numeric predictor features.
 - Binary target column: diagnosis (benign or malignant).
 - The positive class is malignant (1); benign is 0.
-- Reproducible, stratified 80/20 train-test split with random_state=42: 455 training rows and 114 test rows.
+- A stratified 80/20 split (`random_state=42`) gives 455 training rows and 114 test rows.
 - StandardScaler is used in Logistic Regression, KNN, Gaussian Naive Bayes, and SVM pipelines. Decision Tree is not scaled. Each preprocessing step is fitted only on the training rows.
 
-This is an educational ML exercise, not a clinical tool.
+This project is for coursework only; it is not a clinical tool.
 
 ## C. GitHub repository link
 
@@ -91,19 +91,17 @@ The deployed app loads saved models. The separate training script is for reprodu
 
 ## Deploy on Streamlit Community Cloud
 
-1. Open https://share.streamlit.io/ and sign in with the student's own account.
-2. Create a new app from this GitHub repository.
-3. Select branch main and entry file app.py.
-4. Wait for the build to complete and open the generated public URL.
-5. Verify that the app loads the sample CSV and displays the comparison metrics, confusion matrix, and report.
-6. The student opened the live app URL and confirmed that the five-model comparison table is visible.
+1. Open https://share.streamlit.io/ and sign in with GitHub.
+2. Create an app from this repository, using branch `main` and file `app.py`.
+3. Wait for the build to finish, then open the app URL above.
+4. Check that the sample CSV loads and that the comparison table, confusion matrix, and classification report appear.
 
 Official guide: https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy
 
 ## BITS Virtual Lab evidence and final submission
 
-The exercise requires a screenshot showing execution in BITS Virtual Lab and a single PDF containing the GitHub repository URL, live Streamlit URL, this README content, and the screenshot. The screenshot in the submission PDF shows the actual BITS Virtual Lab desktop with user ID `s2026aj05061` in the top-right panel and the Jupyter Notebook displaying the five-model evaluation table. The evidence is genuine and was cropped only to exclude a session token from the outer browser address bar.
+The assignment asks for BITS Virtual Lab execution evidence in the final PDF. The collected screenshots show lab ID `s2026aj05061`, notebook execution, the model metrics, the Streamlit app, CSV upload, preview, and exported predictions. The final PDF also needs the GitHub link, live app link, and this README.
 
 ## Limitations
 
-The reported scores come from one stratified holdout split rather than cross-validation, and small changes in data splits or parameters may change model ranking. This dataset and app are educational; they must not be used to make clinical decisions.
+These scores come from one holdout split, not cross-validation. The ranking may change with another split or different model settings. The dataset and app are for coursework, not clinical use.

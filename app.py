@@ -1,4 +1,4 @@
-"""Evaluate five saved classification pipelines on uploaded labeled CSV data."""
+"""Compare the saved classifiers on a labeled test CSV."""
 from __future__ import annotations
 import json
 from pathlib import Path
@@ -40,7 +40,7 @@ def load_models():
             loaded[name] = joblib.load(path)
     if missing:
         raise FileNotFoundError("Saved model files are not ready yet: " + ", ".join(missing)
-                                + ". Check the repository's Actions tab for the model-building workflow.")
+                                + ". Check the latest run under GitHub Actions.")
     return loaded
 
 
@@ -48,7 +48,7 @@ def load_models():
 def sample_data():
     path = ROOT / "test_data.csv"
     if not path.exists():
-        raise FileNotFoundError("test_data.csv is missing. Check the repository's model-building workflow.")
+        raise FileNotFoundError("test_data.csv was not found. Run train_models.py to create it.")
     return pd.read_csv(path)
 
 
@@ -96,7 +96,7 @@ def main():
         feature_names = list(next(iter(models.values())).feature_names_in_)
     except Exception as exc:
         st.error(str(exc))
-        st.info("The repository's GitHub Actions workflow creates the trained model files. Wait for that run to finish, then refresh this app.")
+        st.info("The model files are created by the GitHub Actions workflow. Check the latest run, then refresh this app.")
         st.stop()
 
     with st.sidebar:
@@ -106,7 +106,7 @@ def main():
         st.write("Holdout rows: " + str(manifest["n_test"]))
         st.write("Features required: " + str(len(feature_names)))
         st.markdown("[UCI dataset source](https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic)")
-        st.caption("CSV must contain all feature columns and a diagnosis target. Uploaded data is never used to train a model.")
+        st.caption("Upload a CSV with all 30 feature columns and a diagnosis column. The app evaluates the file without retraining.")
 
     uploaded = st.file_uploader("Upload labeled test data (CSV)", type=["csv"], max_upload_size=20)
     try:

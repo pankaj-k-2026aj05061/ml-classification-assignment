@@ -1,4 +1,4 @@
-"""Train/evaluate five classifiers on the public Wisconsin Diagnostic dataset."""
+"""Train the five classifiers and save their holdout results."""
 from __future__ import annotations
 import json
 import platform
@@ -73,9 +73,10 @@ def main():
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     dataset = load_breast_cancer(as_frame=True)
     X = dataset.data.copy()
-    # scikit-learn's target 0 is malignant and 1 is benign.
+    # Here, malignant is the positive class (1) and benign is 0.
     y = np.where(dataset.target.to_numpy() == 0, 1, 0).astype(int)
     labels = pd.Series(np.where(y == 1, "malignant", "benign"), name=TARGET)
+    # Use one stratified split so each model is tested on the same rows.
     X_train, X_test, y_train, y_test, label_train, label_test = train_test_split(
         X, y, labels, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
     )
@@ -84,11 +85,13 @@ def main():
     for name in NAMES:
         model = models[name]
         model.fit(X_train, y_train)
+        # Save the scaler and classifier together as a single pipeline.
         joblib.dump(model, MODEL_DIR / (slugify(name) + ".joblib"), compress=3)
         row = {"Model": name, **evaluate(model, X_test, y_test)}
         rows.append(row)
         print(name + ": accuracy=" + format(row["Accuracy"], ".4f") +
               ", AUC=" + format(row["AUC"], ".4f"))
+    # Keep the target labels readable in the CSV used by the app.
     test_frame = X_test.reset_index(drop=True).copy()
     test_frame[TARGET] = label_test.reset_index(drop=True).to_numpy()
     test_frame.to_csv(ROOT / "test_data.csv", index=False, float_format="%.10g")
@@ -110,7 +113,7 @@ def main():
         "scikit_learn_version": sklearn.__version__,
     }
     (MODEL_DIR / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    print("\nEvaluation on the fixed stratified holdout set:")
+    print("\nHoldout-set results:")
     print(results.to_string(index=False, formatters={c: "{:.4f}".format
           for c in results.columns if c != "Model"}))
     print("Saved " + str(len(test_frame)) + " rows to test_data.csv")
