@@ -1,7 +1,7 @@
 # ML Classification Model Comparison and Streamlit App
 
 **Repository:** https://github.com/pankaj-k-2026aj05061/ml-classification-assignment  
-**Live Streamlit app:** Pending deployment under the student's account.  
+**Live Streamlit app:** https://pankaj-k-2026aj05061-ml-classification-assignment-app-t6l9gk.streamlit.app/  
 **BITS Virtual Lab screenshot:** Must be captured by the student inside their authenticated lab session.
 
 ## A. Problem statement
@@ -26,7 +26,7 @@ https://github.com/pankaj-k-2026aj05061/ml-classification-assignment
 
 ## Live Streamlit app link
 
-Pending. Add the exact public URL produced by Streamlit Community Cloud after deployment and testing.
+https://pankaj-k-2026aj05061-ml-classification-assignment-app-t6l9gk.streamlit.app/
 
 ## D. Models and evaluation metrics
 
@@ -96,7 +96,7 @@ The deployed app loads saved models. The separate training script is for reprodu
 3. Select branch main and entry file app.py.
 4. Wait for the build to complete and open the generated public URL.
 5. Verify that the app loads the sample CSV and displays the comparison metrics, confusion matrix, and report.
-6. Replace the pending live-app URL above with the actual URL only after it works.
+6. The live-app URL above is the URL supplied for this deployment. Verify the app visually before final submission.
 
 Official guide: https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy
 
