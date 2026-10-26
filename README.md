@@ -2,7 +2,7 @@
 
 **Repository:** https://github.com/pankaj-k-2026aj05061/ml-classification-assignment  
 **Live Streamlit app:** https://pankaj-k-2026aj05061-ml-classification-assignment-app-t6l9gk.streamlit.app/  
-**BITS Virtual Lab evidence:** The included screenshot was captured from the authenticated BITS Virtual Lab terminal while running `python train_models.py` and displaying all five models' evaluation metrics.
+**BITS Virtual Lab evidence:** The included screenshot was captured from the authenticated BITS Virtual Lab desktop and shows lab user ID `s2026aj05061`, Jupyter Notebook, and the five models' evaluation metrics.
 
 ## A. Problem statement
 
@@ -102,7 +102,7 @@ Official guide: https://docs.streamlit.io/deploy/streamlit-community-cloud/deplo
 
 ## BITS Virtual Lab evidence and final submission
 
-The exercise requires a screenshot showing execution in BITS Virtual Lab and a single PDF containing the GitHub repository URL, live Streamlit URL, this README content, and the screenshot. The screenshot in the submission PDF shows the actual BITS Virtual Lab terminal running `python train_models.py` and printing the five-model evaluation table. The notebook helper is included for reference. The evidence is genuine and was not recreated.
+The exercise requires a screenshot showing execution in BITS Virtual Lab and a single PDF containing the GitHub repository URL, live Streamlit URL, this README content, and the screenshot. The screenshot in the submission PDF shows the actual BITS Virtual Lab desktop with user ID `s2026aj05061` in the top-right panel and the Jupyter Notebook displaying the five-model evaluation table. The evidence is genuine and was cropped only to exclude a session token from the outer browser address bar.
 
 ## Limitations
 
