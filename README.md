@@ -1,24 +1,22 @@
 # Comparing Five Classification Models
 
-**Repository:** https://github.com/pankaj-k-2026aj05061/ml-classification-assignment  
-**Live Streamlit app:** https://pankaj-k-2026aj05061-ml-classification-assignment-app-t6l9gk.streamlit.app/  
-**BITS Virtual Lab run:** Screenshots show lab ID `s2026aj05061`, the Jupyter notebook, and the five-model results.
+**GitHub repository:** https://github.com/pankaj-k-2026aj05061/ml-classification-assignment  
+**Live Streamlit app:** https://pankaj-k-2026aj05061-ml-classification-assignment-app-t6l9gk.streamlit.app/
 
 ## A. Problem statement
 
-This project compares five classifiers on the Wisconsin Diagnostic Breast Cancer dataset. Each model is scored on the same holdout set using accuracy, AUC, precision, recall, F1, and MCC. The Streamlit app accepts a labeled CSV and shows the comparison, confusion matrix, and classification report without retraining on uploaded data.
+This project compares five classification algorithms on the Breast Cancer Wisconsin (Diagnostic) dataset. All models use the same stratified train/test split and are evaluated using accuracy, AUC, precision, recall, F1, and Matthews correlation coefficient (MCC). The Streamlit app evaluates a labeled CSV using the saved models and displays the comparison, confusion matrix, classification report, and downloadable predictions.
 
 ## B. Dataset description
 
-The project uses the Breast Cancer Wisconsin (Diagnostic) dataset from the UCI Machine Learning Repository: https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic
+The original dataset is from the [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic). For reproducibility, the training script loads scikit-learn's bundled copy with **load_breast_cancer(as_frame=True)**. This is why the feature names in the preview use names such as **mean radius**, **mean perimeter**, and **mean area**.
 
-- 569 instances and 30 numeric predictor features.
-- Binary target column: diagnosis (benign or malignant).
-- The positive class is malignant (1); benign is 0.
-- A stratified 80/20 split (`random_state=42`) gives 455 training rows and 114 test rows.
-- StandardScaler is used in Logistic Regression, KNN, Gaussian Naive Bayes, and SVM pipelines. Decision Tree is not scaled. Each preprocessing step is fitted only on the training rows.
-
-This project is for coursework only; it is not a clinical tool.
+- **Instances and features:** 569 rows and 30 numeric predictor features.
+- **Class balance in the full dataset:** 357 benign and 212 malignant cases.
+- **Target:** diagnosis, with benign encoded as 0 and malignant encoded as 1 (the positive class).
+- **Split:** stratified 80/20 split with **random_state=42**; 455 training rows and 114 holdout rows.
+- **Holdout composition:** 72 benign and 42 malignant rows.
+- **Preprocessing:** StandardScaler is used in Logistic Regression, KNN, Gaussian Naive Bayes, and SVM pipelines. Decision Tree is not scaled. Preprocessing is fitted on training rows only.
 
 ## C. GitHub repository link
 
@@ -30,7 +28,7 @@ https://pankaj-k-2026aj05061-ml-classification-assignment-app-t6l9gk.streamlit.a
 
 ## D. Models and evaluation metrics
 
-All results below refer to the same fixed 114-row holdout split. AUC is computed from malignant-class scores; other metrics use the default predicted class.
+All values below are from the same fixed 114-row holdout set. AUC uses the score for the positive class (malignant); the other metrics use each model's predicted class. The confusion-matrix counts in the observations use the order **TN, FP, FN, TP**.
 
 | Model | Accuracy | AUC | Precision | Recall | F1 | MCC |
 |---|---:|---:|---:|---:|---:|---:|
@@ -40,68 +38,56 @@ All results below refer to the same fixed 114-row holdout split. AUC is computed
 | Gaussian Naive Bayes | 0.9211 | 0.9891 | 0.9231 | 0.8571 | 0.8889 | 0.8292 |
 | Support Vector Machine | 0.9737 | 0.9947 | 1.0000 | 0.9286 | 0.9630 | 0.9442 |
 
-### Observations
+### Hyperparameters used
+
+| Model | Main settings |
+|---|---|
+| Logistic Regression | C=1.0, solver=lbfgs, max_iter=5000; standardized features |
+| Decision Tree | criterion=gini, max_depth=None (unpruned), min_samples_split=2, min_samples_leaf=1; no scaling |
+| K-Nearest Neighbors | n_neighbors=5, weights=uniform, Euclidean distance (p=2); standardized features |
+| Gaussian Naive Bayes | var_smoothing=1e-9; standardized features |
+| Support Vector Machine | RBF kernel, C=1.0, gamma=scale, probability=True; standardized features |
+
+### Observations about model performance
 
 | Model | Observation |
 |---|---|
-| Logistic Regression | Strong results across metrics and the highest AUC (0.9960), indicating excellent ranking performance on this split. |
-| Decision Tree | Accuracy 0.9298 and AUC 0.9246 were the lowest among these five models on this split. It is comparatively interpretable, but its measured performance was weaker here. |
-| K-Nearest Neighbors | Accuracy 0.9561 and precision 0.9744 were strong, while recall was 0.9048. Feature scaling matters for a distance-based method. |
-| Gaussian Naive Bayes | AUC 0.9891 was high, but recall (0.8571), F1 (0.8889), and MCC (0.8292) were lower than the leading models. Ranking performance and default-threshold decisions measure different things. |
-| Support Vector Machine | Highest accuracy (0.9737), precision (1.0000), F1 (0.9630), and MCC (0.9442) on this split; AUC was 0.9947. It missed some malignant cases, so the perfect precision does not mean every case was classified correctly. |
-| Overall winner | SVM leads on accuracy, F1, and MCC; Logistic Regression has the highest AUC. SVM is the overall winner by the first set of metrics on this fixed split, but the ranking depends on the evaluation objective. One holdout split does not guarantee future performance. |
+| Logistic Regression | Correctly classified 110 of 114 rows: TN=71, FP=1, FN=3, TP=39. It has the highest AUC (0.9960) and recall of 0.9286, matching SVM's recall on this split. |
+| Decision Tree | Correctly classified 106 of 114 rows: TN=68, FP=4, FN=4, TP=38. Its AUC (0.9246) is the lowest of the five, but its accuracy is not the lowest; Gaussian Naive Bayes has lower accuracy (0.9211). The tree is unpruned (max_depth=None), so it can fit complex patterns in the training data. |
+| K-Nearest Neighbors | Correctly classified 109 of 114 rows: TN=71, FP=1, FN=4, TP=38. Precision is strong (0.9744), while recall is 0.9048, meaning it misses four malignant cases in the holdout set. Feature scaling is important for a distance-based model. |
+| Gaussian Naive Bayes | Correctly classified 105 of 114 rows: TN=69, FP=3, FN=6, TP=36. It has the lowest accuracy, recall, F1, and MCC in this comparison, and misses six malignant cases. The conditional-independence assumption may be a poor fit for this dataset: mean radius, mean perimeter, and mean area are strongly correlated (pairwise correlations are approximately 0.998, 0.987, and 0.987). |
+| Support Vector Machine | Correctly classified 111 of 114 rows: TN=72, FP=0, FN=3, TP=39. It has the highest accuracy (0.9737), precision (1.0000), F1 (0.9630), and MCC (0.9442), with no false positives but three missed malignant cases. It gets only one more test row correct than Logistic Regression. |
+
+**Overall winner for this holdout split:** Support Vector Machine is the best overall choice if the emphasis is on accuracy, precision, F1, MCC, and avoiding false positives. However, it beats Logistic Regression by just one correctly classified row (111 versus 110), and both have recall of 0.9286. Logistic Regression has the highest AUC (0.9960 versus 0.9947 for SVM), so the preferred model depends on the evaluation goal and the relative cost of false positives and false negatives.
+
+**SVM score note:** The SVM predicted label comes from the classifier's decision function, while its exported malignant_score and AUC use the calibrated probability from predict_proba. Scikit-learn's SVC with probability enabled can occasionally return a calibrated probability above 0.5 for a row whose predicted label is benign. This is a known difference between the calibrated probability and the class-prediction rule, not a mismatch in the test row.
 
 ## Streamlit app features
 
-- CSV upload for labeled test data (20 MB limit).
-- Loads five saved model pipelines; uploaded rows are not used for training.
-- Comparison table for accuracy, AUC, precision, recall, F1, and MCC.
-- Model-selection dropdown with selected-model metrics, confusion matrix, and classification report.
-- Downloadable model predictions and malignant-class scores.
-- Input checks for missing features, invalid numeric values, unknown labels, empty data, and single-class target files.
-- Uses the bundled test_data.csv as the default example.
+- Upload a labeled test CSV or use the bundled test_data.csv.
+- Compare all five saved model pipelines using the six required metrics.
+- Inspect selected-model metrics, confusion matrix, and classification report.
+- Download model predictions and malignant-class scores.
+- Input checks for missing features, invalid numeric values, unknown labels, empty files, and single-class target data.
 
-The uploaded CSV must contain the exact 30 feature columns and diagnosis target column. Accepted labels are benign/malignant, B/M, or 0/1 where 0 means benign and 1 means malignant. Both target classes must be present to calculate AUC.
+The uploaded CSV must contain the exact 30 feature columns and a diagnosis column. Accepted labels are benign/malignant, B/M, or 0/1 where 0 means benign and 1 means malignant. Both target classes must be present for AUC calculation.
 
 ## Repository structure
 
-- app.py: interactive application
-- train_models.py: reproducible training and evaluation script
-- requirements.txt: Python dependencies
-- test_data.csv: fixed labeled holdout test data (generated by the training workflow)
-- evaluation_results.csv and evaluation_results_ranked.csv: metric tables
-- model/: five serialized model pipelines and metadata (generated and committed by GitHub Actions)
-- tests/: regression tests
-- .github/workflows/train-and-save-models.yml: trains, tests, and commits saved artifacts when source files are updated
-- BITS_Virtual_Lab_Execution.ipynb: lab execution helper notebook
-- DEPLOYMENT_CHECKLIST.md: final deployment and submission steps
+- app.py: interactive Streamlit application
+- train_models.py: training and evaluation script
+- requirements.txt: dependencies
+- test_data.csv: labeled holdout data
+- model/: five saved pipelines and manifest.json
+- evaluation_results.csv and evaluation_results_ranked.csv: evaluation tables
+- tests/test_models.py: automated checks
+- .github/workflows/train-and-save-models.yml: runs syntax checks, training, tests, and a Streamlit startup check
+- BITS_Virtual_Lab_Execution.ipynb: notebook used to run the same training script in BITS Virtual Lab
 
 ## Run locally
 
-Use Python 3.12 or 3.13 with a compatible environment. From the project directory:
+From the project directory, install dependencies with **python -m pip install -r requirements.txt**, train and recreate the results with **python train_models.py**, run the checks with **python -m unittest discover -s tests -v**, and start the app with **streamlit run app.py**.
 
-    python -m venv .venv
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
-    python train_models.py
-    python -m unittest discover -s tests -v
-    streamlit run app.py
+## BITS Virtual Lab execution
 
-The deployed app loads saved models. The separate training script is for reproducibility and is not called on uploaded CSV data.
-
-## Deploy on Streamlit Community Cloud
-
-1. Open https://share.streamlit.io/ and sign in with GitHub.
-2. Create an app from this repository, using branch `main` and file `app.py`.
-3. Wait for the build to finish, then open the app URL above.
-4. Check that the sample CSV loads and that the comparison table, confusion matrix, and classification report appear.
-
-Official guide: https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy
-
-## BITS Virtual Lab evidence and final submission
-
-The assignment asks for BITS Virtual Lab execution evidence in the final PDF. The collected screenshots show lab ID `s2026aj05061`, notebook execution, the model metrics, the Streamlit app, CSV upload, preview, and exported predictions. The final PDF also needs the GitHub link, live app link, and this README.
-
-## Limitations
-
-These scores come from one holdout split, not cross-validation. The ranking may change with another split or different model settings. The dataset and app are for coursework, not clinical use.
+During the BITS Virtual Lab run, BITS_Virtual_Lab_Execution.ipynb executed train_models.py, which fitted all five classifiers on the shared training split, generated the holdout test CSV and metric tables, and printed the results shown in the lab screenshot. GitHub Actions also runs the same script to check reproducibility and keep the saved model artifacts and CSV outputs current.
