@@ -1,17 +1,68 @@
 {
-  "dataset": "UCI Breast Cancer Wisconsin (Diagnostic)",
-  "dataset_source": "https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic",
-  "n_instances": 569,
-  "n_features": 30,
-  "n_train": 455,
-  "n_test": 114,
+  "dataset": "IBM Telco Customer Churn sample",
+  "dataset_source": "https://github.com/IBM/telco-customer-churn-on-icp4d/blob/master/data/Telco-Customer-Churn.csv",
+  "dataset_note": "IBM sample data for a fictional California telecommunications company; not actual customer records.",
+  "data_file": "data/Telco-Customer-Churn.csv",
+  "n_instances": 7043,
+  "n_raw_columns": 21,
+  "n_features": 19,
+  "feature_columns": [
+    "gender",
+    "SeniorCitizen",
+    "Partner",
+    "Dependents",
+    "tenure",
+    "PhoneService",
+    "MultipleLines",
+    "InternetService",
+    "OnlineSecurity",
+    "OnlineBackup",
+    "DeviceProtection",
+    "TechSupport",
+    "StreamingTV",
+    "StreamingMovies",
+    "Contract",
+    "PaperlessBilling",
+    "PaymentMethod",
+    "MonthlyCharges",
+    "TotalCharges"
+  ],
+  "numeric_features": [
+    "SeniorCitizen",
+    "tenure",
+    "MonthlyCharges",
+    "TotalCharges"
+  ],
+  "categorical_features": [
+    "gender",
+    "Partner",
+    "Dependents",
+    "PhoneService",
+    "MultipleLines",
+    "InternetService",
+    "OnlineSecurity",
+    "OnlineBackup",
+    "DeviceProtection",
+    "TechSupport",
+    "StreamingTV",
+    "StreamingMovies",
+    "Contract",
+    "PaperlessBilling",
+    "PaymentMethod"
+  ],
+  "n_train": 5634,
+  "n_test": 1409,
   "test_size_fraction": 0.2,
   "random_state": 42,
-  "target_column": "diagnosis",
-  "positive_class": "malignant",
+  "target_column": "Churn",
+  "positive_class": "Yes (customer churned)",
   "class_mapping": {
-    "benign": 0,
-    "malignant": 1
+    "No": 0,
+    "Yes": 1
+  },
+  "class_balance": {
+    "No": 5174,
+    "Yes": 1869
   },
   "models": {
     "Logistic Regression": "model/logistic_regression.joblib",
@@ -20,6 +71,57 @@
     "Gaussian Naive Bayes": "model/gaussian_naive_bayes.joblib",
     "Support Vector Machine": "model/support_vector_machine.joblib"
   },
-  "python_version": "3.13.16",
+  "evaluation_metrics": [
+    "Accuracy",
+    "AUC",
+    "Precision",
+    "Recall",
+    "F1",
+    "MCC"
+  ],
+  "overall_winner_by_average_rank": "Logistic Regression",
+  "metrics": {
+    "Logistic Regression": {
+      "Accuracy": 0.8055358410220014,
+      "AUC": 0.8421349040274871,
+      "Precision": 0.6572327044025157,
+      "Recall": 0.5588235294117647,
+      "F1": 0.6040462427745664,
+      "MCC": 0.4790341208187829
+    },
+    "Decision Tree": {
+      "Accuracy": 0.7196593328601846,
+      "AUC": 0.64671006742618,
+      "Precision": 0.4730077120822622,
+      "Recall": 0.4919786096256685,
+      "F1": 0.48230668414154654,
+      "MCC": 0.29029990622728963
+    },
+    "K-Nearest Neighbors": {
+      "Accuracy": 0.7636621717530163,
+      "AUC": 0.7883515461520576,
+      "Precision": 0.5526992287917738,
+      "Recall": 0.5748663101604278,
+      "F1": 0.563564875491481,
+      "MCC": 0.4017529219968404
+    },
+    "Gaussian Naive Bayes": {
+      "Accuracy": 0.694819020581973,
+      "AUC": 0.8074297966881089,
+      "Precision": 0.45894428152492667,
+      "Recall": 0.8368983957219251,
+      "F1": 0.5928030303030303,
+      "MCC": 0.4244518964900018
+    },
+    "Support Vector Machine": {
+      "Accuracy": 0.7913413768630234,
+      "AUC": 0.7901754114030328,
+      "Precision": 0.6418439716312057,
+      "Recall": 0.4839572192513369,
+      "F1": 0.551829268292683,
+      "MCC": 0.4264085184625226
+    }
+  },
+  "python_version": "3.12.15",
   "scikit_learn_version": "1.8.0"
 }
