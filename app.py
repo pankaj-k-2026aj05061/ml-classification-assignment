@@ -25,20 +25,86 @@ st.set_page_config(page_title="Telco Churn Model Evaluator", page_icon="📊", l
 
 @st.cache_resource
 def load_artifacts():
+    """
+    Load a consistent churn model bundle.
+
+    Streamlit can briefly serve app.py and model artifacts from different
+    repository revisions during deployment. If that happens, retrain once from
+    the checked-in script instead of failing with a KeyError on a missing
+    manifest field or silently mixing the previous dataset's models.
+    """
+    import runpy
+
     manifest_path = MODEL_DIR / "manifest.json"
-    if not manifest_path.exists():
-        raise FileNotFoundError("Model artifacts are not ready yet. Check that the project training workflow has finished.")
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    models = {}
-    missing = []
-    for name, filename in MODEL_FILES.items():
-        path = MODEL_DIR / filename
-        if not path.exists():
-            missing.append(filename)
-        else:
-            models[name] = joblib.load(path)
-    if missing:
-        raise FileNotFoundError("Missing saved model files: " + ", ".join(missing))
+    test_path = ROOT / "test_data.csv"
+
+    def train_current_bundle():
+        training_script = ROOT / "train_models.py"
+        if not training_script.exists():
+            raise FileNotFoundError("train_models.py is missing; cannot rebuild stale model artifacts.")
+        runpy.run_path(str(training_script), run_name="__main__")
+
+    def read_current_manifest():
+        if not manifest_path.exists():
+            return {}
+        try:
+            return json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return {}
+
+    manifest = read_current_manifest()
+    try:
+        sample = pd.read_csv(test_path) if test_path.exists() else pd.DataFrame()
+    except Exception:
+        sample = pd.DataFrame()
+    expected_features = [c for c in sample.columns if c != TARGET]
+    expected_valid = (
+        len(expected_features) == 19
+        and TARGET in sample.columns
+        and manifest.get("dataset") == "IBM Telco Customer Churn sample"
+        and manifest.get("feature_columns") == expected_features
+        and manifest.get("n_test") == len(sample)
+        and manifest.get("n_features") == len(expected_features)
+    )
+
+    def load_models():
+        loaded = {}
+        for name, filename in MODEL_FILES.items():
+            path = MODEL_DIR / filename
+            if not path.exists():
+                raise FileNotFoundError("Missing saved model file: " + filename)
+            loaded[name] = joblib.load(path)
+        return loaded
+
+    if not expected_valid:
+        train_current_bundle()
+        manifest = read_current_manifest()
+    models = load_models()
+
+    feature_schema_matches = all(
+        list(getattr(model, "feature_names_in_", [])) == expected_features
+        for model in models.values()
+    )
+    if not feature_schema_matches or manifest.get("feature_columns") != expected_features:
+        # Repair deployment races where the manifest and estimator artifacts
+        # come from different project revisions.
+        train_current_bundle()
+        manifest = read_current_manifest()
+        models = load_models()
+        feature_schema_matches = all(
+            list(getattr(model, "feature_names_in_", [])) == expected_features
+            for model in models.values()
+        )
+
+    if not feature_schema_matches:
+        raise RuntimeError(
+            "The deployed model files still do not match the churn test-data columns. "
+            "Check the latest GitHub Actions training run and refresh the Streamlit deployment."
+        )
+    required_manifest_keys = {"n_instances", "n_features", "n_train", "n_test", "feature_columns", "numeric_features", "models"}
+    missing_keys = sorted(required_manifest_keys.difference(manifest))
+    if missing_keys:
+        raise RuntimeError("Model manifest is missing required fields after rebuild: " + ", ".join(missing_keys))
     return models, manifest
 
 
