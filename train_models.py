@@ -1,4 +1,4 @@
-"""Train the five classifiers and save their holdout results."""
+"""Train and compare five classifiers on the IBM Telco Customer Churn sample."""
 from __future__ import annotations
 import json
 import platform
@@ -8,115 +8,195 @@ import joblib
 import numpy as np
 import pandas as pd
 import sklearn
-from sklearn.datasets import load_breast_cancer
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (accuracy_score, f1_score, matthews_corrcoef,
-                             precision_score, recall_score, roc_auc_score)
+from sklearn.metrics import accuracy_score, f1_score, matthews_corrcoef, precision_score, recall_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
 ROOT = Path(__file__).resolve().parent
+DATA_FILE = ROOT / "data" / "Telco-Customer-Churn.csv"
 MODEL_DIR = ROOT / "model"
+TARGET = "Churn"
 RANDOM_STATE = 42
 TEST_SIZE = 0.20
-TARGET = "diagnosis"
-NAMES = ["Logistic Regression", "Decision Tree", "K-Nearest Neighbors",
-         "Gaussian Naive Bayes", "Support Vector Machine"]
+NUMERIC_FEATURES = ["SeniorCitizen", "tenure", "MonthlyCharges", "TotalCharges"]
+MODEL_NAMES = ["Logistic Regression", "Decision Tree", "K-Nearest Neighbors", "Gaussian Naive Bayes", "Support Vector Machine"]
+MODEL_FILES = {
+    "Logistic Regression": "logistic_regression.joblib",
+    "Decision Tree": "decision_tree.joblib",
+    "K-Nearest Neighbors": "k_nearest_neighbors.joblib",
+    "Gaussian Naive Bayes": "gaussian_naive_bayes.joblib",
+    "Support Vector Machine": "support_vector_machine.joblib",
+}
+DATASET_URL = "https://github.com/IBM/telco-customer-churn-on-icp4d/blob/master/data/Telco-Customer-Churn.csv"
 
 
-def slugify(name):
+def slugify(name: str) -> str:
     return name.lower().replace("-", "_").replace(" ", "_")
 
 
-def build_models():
+def load_dataset():
+    if not DATA_FILE.exists():
+        raise FileNotFoundError("Dataset file not found at " + str(DATA_FILE) + ". Keep the data folder in the project.")
+    raw = pd.read_csv(DATA_FILE)
+    required = {"customerID", TARGET, *NUMERIC_FEATURES}
+    missing = sorted(required.difference(raw.columns))
+    if missing:
+        raise ValueError("Dataset is missing required columns: " + ", ".join(missing))
+    if len(raw) < 500:
+        raise ValueError("The assignment requires at least 500 instances.")
+    y = raw[TARGET].astype(str).str.strip().str.lower().map({"no": 0, "yes": 1})
+    if y.isna().any():
+        raise ValueError("Churn must contain only Yes/No labels.")
+    # customerID is an identifier, not a predictor; Churn is the target.
+    X = raw.drop(columns=["customerID", TARGET]).copy()
+    X["TotalCharges"] = pd.to_numeric(X["TotalCharges"], errors="coerce").fillna(0.0)
+    for col in ["SeniorCitizen", "tenure", "MonthlyCharges"]:
+        X[col] = pd.to_numeric(X[col], errors="coerce")
+        if X[col].isna().any():
+            raise ValueError("Unexpected missing or non-numeric values in " + col)
+    if len(X.columns) < 12:
+        raise ValueError("The assignment requires at least 12 predictor features.")
+    categorical_features = [c for c in X.columns if c not in NUMERIC_FEATURES]
+    for col in categorical_features:
+        X[col] = X[col].astype("object")
+    return raw, X, y.astype(int), categorical_features
+
+
+def build_preprocessor(categorical_features, scale_numeric=True):
+    numeric_steps = [("imputer", SimpleImputer(strategy="median"))]
+    if scale_numeric:
+        numeric_steps.append(("scaler", StandardScaler()))
+    numeric_pipeline = Pipeline(numeric_steps)
+    categorical_pipeline = Pipeline([
+        ("imputer", SimpleImputer(strategy="most_frequent")),
+        ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
+    ])
+    return ColumnTransformer(
+        [("numeric", numeric_pipeline, NUMERIC_FEATURES),
+         ("categorical", categorical_pipeline, categorical_features)],
+        remainder="drop",
+        verbose_feature_names_out=False,
+    )
+
+
+def build_models(categorical_features):
     return {
-        "Logistic Regression": Pipeline([("scaler", StandardScaler()),
-            ("classifier", LogisticRegression(max_iter=5000, random_state=RANDOM_STATE))]),
-        "Decision Tree": Pipeline([("classifier", DecisionTreeClassifier(random_state=RANDOM_STATE))]),
-        "K-Nearest Neighbors": Pipeline([("scaler", StandardScaler()),
-            ("classifier", KNeighborsClassifier(n_neighbors=5))]),
-        "Gaussian Naive Bayes": Pipeline([("scaler", StandardScaler()),
-            ("classifier", GaussianNB())]),
-        "Support Vector Machine": Pipeline([("scaler", StandardScaler()),
-            ("classifier", SVC(kernel="rbf", C=1.0, gamma="scale", probability=True,
-                               random_state=RANDOM_STATE))]),
+        "Logistic Regression": Pipeline([
+            ("preprocessor", build_preprocessor(categorical_features, True)),
+            ("classifier", LogisticRegression(max_iter=5000, random_state=RANDOM_STATE)),
+        ]),
+        "Decision Tree": Pipeline([
+            ("preprocessor", build_preprocessor(categorical_features, False)),
+            ("classifier", DecisionTreeClassifier(random_state=RANDOM_STATE)),
+        ]),
+        "K-Nearest Neighbors": Pipeline([
+            ("preprocessor", build_preprocessor(categorical_features, True)),
+            ("classifier", KNeighborsClassifier(n_neighbors=5)),
+        ]),
+        "Gaussian Naive Bayes": Pipeline([
+            ("preprocessor", build_preprocessor(categorical_features, True)),
+            ("classifier", GaussianNB(var_smoothing=1e-9)),
+        ]),
+        "Support Vector Machine": Pipeline([
+            ("preprocessor", build_preprocessor(categorical_features, True)),
+            ("classifier", SVC(kernel="rbf", C=1.0, gamma="scale", probability=True, random_state=RANDOM_STATE)),
+        ]),
     }
 
 
-def score_positive(model, X):
-    if hasattr(model, "predict_proba"):
-        probs = model.predict_proba(X)
-        return probs[:, list(model.classes_).index(1)]
-    scores = model.decision_function(X)
-    return -scores if list(model.classes_).index(1) == 0 else scores
+def positive_class_scores(model, X):
+    probabilities = model.predict_proba(X)
+    classes = list(model.classes_)
+    return probabilities[:, classes.index(1)]
 
 
 def evaluate(model, X, y):
-    pred = model.predict(X)
-    score = score_positive(model, X)
+    predicted = model.predict(X)
+    scores = positive_class_scores(model, X)
     return {
-        "Accuracy": float(accuracy_score(y, pred)),
-        "AUC": float(roc_auc_score(y, score)),
-        "Precision": float(precision_score(y, pred, zero_division=0)),
-        "Recall": float(recall_score(y, pred, zero_division=0)),
-        "F1": float(f1_score(y, pred, zero_division=0)),
-        "MCC": float(matthews_corrcoef(y, pred)),
+        "Accuracy": float(accuracy_score(y, predicted)),
+        "AUC": float(roc_auc_score(y, scores)),
+        "Precision": float(precision_score(y, predicted, zero_division=0)),
+        "Recall": float(recall_score(y, predicted, zero_division=0)),
+        "F1": float(f1_score(y, predicted, zero_division=0)),
+        "MCC": float(matthews_corrcoef(y, predicted)),
     }
 
 
 def main():
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    dataset = load_breast_cancer(as_frame=True)
-    X = dataset.data.copy()
-    # Here, malignant is the positive class (1) and benign is 0.
-    y = np.where(dataset.target.to_numpy() == 0, 1, 0).astype(int)
-    labels = pd.Series(np.where(y == 1, "malignant", "benign"), name=TARGET)
-    # Use one stratified split so each model is tested on the same rows.
-    X_train, X_test, y_train, y_test, label_train, label_test = train_test_split(
-        X, y, labels, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
+    raw, X, y, categorical_features = load_dataset()
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y,
     )
+    models = build_models(categorical_features)
     rows = []
-    models = build_models()
-    for name in NAMES:
+    for name in MODEL_NAMES:
         model = models[name]
         model.fit(X_train, y_train)
-        # Save the scaler and classifier together as a single pipeline.
-        joblib.dump(model, MODEL_DIR / (slugify(name) + ".joblib"), compress=3)
-        row = {"Model": name, **evaluate(model, X_test, y_test)}
-        rows.append(row)
-        print(name + ": accuracy=" + format(row["Accuracy"], ".4f") +
-              ", AUC=" + format(row["AUC"], ".4f"))
-    # Keep the target labels readable in the CSV used by the app.
-    test_frame = X_test.reset_index(drop=True).copy()
-    test_frame[TARGET] = label_test.reset_index(drop=True).to_numpy()
-    test_frame.to_csv(ROOT / "test_data.csv", index=False, float_format="%.10g")
+        joblib.dump(model, MODEL_DIR / MODEL_FILES[name], compress=3)
+        metrics = evaluate(model, X_test, y_test)
+        rows.append({"Model": name, **metrics})
+        print(name + ": Accuracy=" + format(metrics["Accuracy"], ".4f") + ", AUC=" + format(metrics["AUC"], ".4f"))
+
+    test_data = X_test.reset_index(drop=True).copy()
+    test_data[TARGET] = np.where(y_test.reset_index(drop=True).to_numpy() == 1, "Yes", "No")
+    test_data.to_csv(ROOT / "test_data.csv", index=False, float_format="%.10g")
+
     results = pd.DataFrame(rows)
+    metric_columns = ["Accuracy", "AUC", "Precision", "Recall", "F1", "MCC"]
     results.to_csv(ROOT / "evaluation_results.csv", index=False, float_format="%.6f")
-    results.sort_values(["AUC", "F1"], ascending=False).to_csv(
-        ROOT / "evaluation_results_ranked.csv", index=False, float_format="%.6f"
-    )
+    ranked = results.copy()
+    ranked["Average Rank"] = ranked[metric_columns].rank(ascending=False, method="average").mean(axis=1)
+    ranked = ranked.sort_values(["Average Rank", "AUC", "F1"], ascending=[True, False, False])
+    ranked.to_csv(ROOT / "evaluation_results_ranked.csv", index=False, float_format="%.6f")
+    winner = str(ranked.iloc[0]["Model"])
+
+    counts = raw[TARGET].astype(str).str.strip().str.title().value_counts().to_dict()
     manifest = {
-        "dataset": "UCI Breast Cancer Wisconsin (Diagnostic)",
-        "dataset_source": "https://archive.ics.uci.edu/dataset/17/breast+cancer+wisconsin+diagnostic",
-        "n_instances": int(len(X)), "n_features": int(X.shape[1]),
-        "n_train": int(len(X_train)), "n_test": int(len(X_test)),
-        "test_size_fraction": TEST_SIZE, "random_state": RANDOM_STATE,
-        "target_column": TARGET, "positive_class": "malignant",
-        "class_mapping": {"benign": 0, "malignant": 1},
-        "models": {name: "model/" + slugify(name) + ".joblib" for name in NAMES},
+        "dataset": "IBM Telco Customer Churn sample",
+        "dataset_source": DATASET_URL,
+        "dataset_note": "IBM sample data for a fictional California telecommunications company; not actual customer records.",
+        "data_file": "data/Telco-Customer-Churn.csv",
+        "n_instances": int(len(raw)),
+        "n_raw_columns": int(raw.shape[1]),
+        "n_features": int(X.shape[1]),
+        "feature_columns": list(X.columns),
+        "numeric_features": NUMERIC_FEATURES,
+        "categorical_features": categorical_features,
+        "n_train": int(len(X_train)),
+        "n_test": int(len(X_test)),
+        "test_size_fraction": TEST_SIZE,
+        "random_state": RANDOM_STATE,
+        "target_column": TARGET,
+        "positive_class": "Yes (customer churned)",
+        "class_mapping": {"No": 0, "Yes": 1},
+        "class_balance": {str(k): int(v) for k, v in counts.items()},
+        "models": {name: "model/" + MODEL_FILES[name] for name in MODEL_NAMES},
+        "evaluation_metrics": metric_columns,
+        "overall_winner_by_average_rank": winner,
+        "metrics": {str(row["Model"]): {k: float(row[k]) for k in metric_columns} for row in rows},
         "python_version": platform.python_version(),
         "scikit_learn_version": sklearn.__version__,
     }
     (MODEL_DIR / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    print("\nHoldout-set results:")
-    print(results.to_string(index=False, formatters={c: "{:.4f}".format
-          for c in results.columns if c != "Model"}))
-    print("Saved " + str(len(test_frame)) + " rows to test_data.csv")
+    print("\nEvaluation on the same stratified test set:")
+    print(results.to_string(index=False, formatters={c: "{:.4f}".format for c in metric_columns}))
+    print("\nDataset rows: " + str(len(raw)))
+    print("Predictor features used: " + str(X.shape[1]))
+    print("Training rows: " + str(len(X_train)))
+    print("Test rows: " + str(len(X_test)))
+    print("Saved models: " + str(len(models)))
+    print("Overall winner by average rank across six metrics: " + winner)
+    print("Notebook run complete.")
 
 
 if __name__ == "__main__":
