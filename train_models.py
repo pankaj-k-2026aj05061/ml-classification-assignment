@@ -2,6 +2,7 @@
 from __future__ import annotations
 import json
 import platform
+import urllib.request
 from pathlib import Path
 
 import joblib
@@ -21,7 +22,8 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
 ROOT = Path(__file__).resolve().parent
-DATA_FILE = ROOT / "data" / "Telco-Customer-Churn.csv"
+DATA_DIR = ROOT / "data"
+DATA_FILE = DATA_DIR / "Telco-Customer-Churn.csv"
 MODEL_DIR = ROOT / "model"
 TARGET = "Churn"
 RANDOM_STATE = 42
@@ -36,15 +38,32 @@ MODEL_FILES = {
     "Support Vector Machine": "support_vector_machine.joblib",
 }
 DATASET_URL = "https://github.com/IBM/telco-customer-churn-on-icp4d/blob/master/data/Telco-Customer-Churn.csv"
+DATASET_DOWNLOAD_URL = "https://raw.githubusercontent.com/IBM/telco-customer-churn-on-icp4d/master/data/Telco-Customer-Churn.csv"
 
 
 def slugify(name: str) -> str:
     return name.lower().replace("-", "_").replace(" ", "_")
 
 
+def ensure_dataset():
+    if DATA_FILE.exists():
+        return
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    print("Downloading the public IBM sample dataset...")
+    request = urllib.request.Request(
+        DATASET_DOWNLOAD_URL,
+        headers={"User-Agent": "ML-Classification-Assignment/1.0"},
+    )
+    with urllib.request.urlopen(request, timeout=60) as response:
+        content = response.read()
+    if len(content) < 100_000:
+        raise RuntimeError("The dataset download appears incomplete; please retry.")
+    DATA_FILE.write_bytes(content)
+    print("Dataset downloaded to " + str(DATA_FILE))
+
+
 def load_dataset():
-    if not DATA_FILE.exists():
-        raise FileNotFoundError("Dataset file not found at " + str(DATA_FILE) + ". Keep the data folder in the project.")
+    ensure_dataset()
     raw = pd.read_csv(DATA_FILE)
     required = {"customerID", TARGET, *NUMERIC_FEATURES}
     missing = sorted(required.difference(raw.columns))
@@ -52,6 +71,8 @@ def load_dataset():
         raise ValueError("Dataset is missing required columns: " + ", ".join(missing))
     if len(raw) < 500:
         raise ValueError("The assignment requires at least 500 instances.")
+    if raw.shape[1] != 21 or len(raw) != 7043:
+        raise ValueError("Unexpected dataset shape; expected the IBM sample (7,043 rows and 21 columns).")
     y = raw[TARGET].astype(str).str.strip().str.lower().map({"no": 0, "yes": 1})
     if y.isna().any():
         raise ValueError("Churn must contain only Yes/No labels.")
