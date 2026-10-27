@@ -19,9 +19,9 @@ All five classifiers use the same stratified 80/20 train/test split. Accuracy, A
 - **Predictors:** 19 features after removing customerID (an identifier) and the Churn target.
 - **Target balance:** 5,174 No records and 1,869 Yes records in the full dataset.
 - **Preprocessing:** TotalCharges is converted to numeric; its 11 blank values are set to 0 because those records have zero tenure. Numeric features are imputed if needed and standardized for Logistic Regression, KNN, Gaussian Naive Bayes, and SVM. The Decision Tree uses numeric features without scaling. Categorical features are imputed and one-hot encoded within each model pipeline. All preprocessing is fitted on training rows only.
-- **Split:** Stratified 80/20 split with random_state=42. The script writes the exact training/test row counts to model/manifest.json. The expected split is 5,634 training rows and 1,409 test rows.
+- **Split:** Stratified 80/20 split with random_state=42: 5,634 training rows and 1,409 test rows. The test split contains 1,035 No cases and 374 Yes cases.
 
-The script downloads the dataset into the local data folder on first run if it is not already present. The app evaluates test_data.csv, which contains the 19 predictor columns and a labelled Churn target.
+The training script downloads the dataset into the local data folder on first run if it is not already present. The app evaluates test_data.csv, which contains the 19 predictor columns and a labelled Churn target.
 
 ## C. GitHub repository link
 
@@ -33,30 +33,30 @@ https://pankaj-k-2026aj05061-ml-classification-assignment-app-t6l9gk.streamlit.a
 
 ## D. Models and evaluation metrics
 
-All five models are evaluated on the same stratified test set. AUC uses the estimated probability of the positive class (Churn = Yes). Precision, recall, and F1 treat a churned customer (Yes) as the positive class.
-
-The exact metric values and observations will be inserted from the first successful, reproducible training run before the submission is prepared. The definitive results are also saved in evaluation_results.csv.
+All values below are measured on the same 1,409-row stratified test set. AUC uses the estimated probability of the positive class (Churn = Yes). Precision, recall, and F1 treat a churned customer (Yes) as the positive class.
 
 | Model | Accuracy | AUC | Precision | Recall | F1 | MCC |
 |---|---:|---:|---:|---:|---:|---:|
-| Logistic Regression | Pending initial run | — | — | — | — | — |
-| Decision Tree | Pending initial run | — | — | — | — | — |
-| K-Nearest Neighbors | Pending initial run | — | — | — | — | — |
-| Gaussian Naive Bayes | Pending initial run | — | — | — | — | — |
-| Support Vector Machine | Pending initial run | — | — | — | — | — |
+| Logistic Regression | 0.8055 | 0.8421 | 0.6572 | 0.5588 | 0.6040 | 0.4790 |
+| Decision Tree | 0.7197 | 0.6467 | 0.4730 | 0.4920 | 0.4823 | 0.2903 |
+| K-Nearest Neighbors | 0.7637 | 0.7884 | 0.5527 | 0.5749 | 0.5636 | 0.4018 |
+| Gaussian Naive Bayes | 0.6948 | 0.8074 | 0.4589 | 0.8369 | 0.5928 | 0.4245 |
+| Support Vector Machine | 0.7913 | 0.7902 | 0.6418 | 0.4840 | 0.5518 | 0.4264 |
 
 ### Observations about model performance
 
-The final README will describe each model using the measured test-set results, including false-positive and false-negative trade-offs where relevant. The overall winner will be selected by average rank across all six metrics, with AUC and F1 used only to break ties. This avoids selecting a winner based on accuracy alone.
+The confusion matrix counts below use the order TN (correctly predicted No), FP (No predicted as Yes), FN (Yes predicted as No), and TP (correctly predicted Yes).
 
 | Model | Observation about performance |
 |---|---|
-| Logistic Regression | To be completed from the measured metrics after training. |
-| Decision Tree | To be completed from the measured metrics after training. |
-| K-Nearest Neighbors | To be completed from the measured metrics after training. |
-| Gaussian Naive Bayes | To be completed from the measured metrics after training. |
-| Support Vector Machine | To be completed from the measured metrics after training. |
-| Overall winner | To be completed from the average rank across Accuracy, AUC, Precision, Recall, F1, and MCC. |
+| Logistic Regression | Best overall on the average-rank rule across the six metrics. It has the highest accuracy (0.8055), AUC (0.8421), precision (0.6572), F1 (0.6040), and MCC (0.4790). On the test set it correctly classifies 1,135 of 1,409 rows (TN=926, FP=109, FN=165, TP=209). Its recall is 0.5588, so it misses 165 of the 374 churn cases. |
+| Decision Tree | Lowest AUC (0.6467) and MCC (0.2903), with 1,014 correct predictions (TN=830, FP=205, FN=190, TP=184). Its precision, recall, and F1 are also the lowest or among the lowest, so it is the weakest model on this particular split. |
+| K-Nearest Neighbors | Correctly classifies 1,076 rows (TN=861, FP=174, FN=159, TP=215). Recall (0.5749) is slightly higher than Logistic Regression, but precision (0.5527), AUC (0.7884), F1 (0.5636), and MCC (0.4018) are lower. |
+| Gaussian Naive Bayes | Highest recall (0.8369): it finds 313 of the 374 churn cases and misses only 61. However, it produces 369 false positives (TN=666, FP=369, FN=61, TP=313), giving the lowest accuracy (0.6948) and precision (0.4589). It may suit a use case where missing a churner is especially costly and a large number of follow-up alerts is acceptable. |
+| Support Vector Machine | Correctly classifies 1,115 rows (TN=934, FP=101, FN=193, TP=181). It has the fewest false positives (101) and precision of 0.6418, but recall is only 0.4840, so it misses 193 of the 374 churn cases. Its AUC is 0.7902 and MCC is 0.4264. |
+| **Overall winner: Logistic Regression** | It has the best average rank across Accuracy, AUC, Precision, Recall, F1, and MCC. This choice balances the metrics instead of choosing a model based only on accuracy. Gaussian Naive Bayes has the strongest recall, so it could be preferable if detecting as many churn cases as possible matters more than limiting false positives. |
+
+The average-rank comparison is saved in evaluation_results_ranked.csv. Each metric is ranked with higher values considered better; the model with the lowest mean rank is selected. AUC and F1 break ties.
 
 ## Streamlit app features
 
